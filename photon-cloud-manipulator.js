@@ -22,8 +22,6 @@ var server = net.createServer();
 
 var connections = [];
 
-var uploadQueue = [];
-var downloadQueue = [];
 
 vorpal
 	.command('data [action]', 'Turns data transmissions, both upload and download. Action = [on|off] or omit to toggle.')
@@ -84,6 +82,9 @@ server.on('connection', function(conn) {
 	var client = new net.Socket();
 
 	connections.push({conn:conn,client:client});
+
+	var uploadQueue = [];
+	var downloadQueue = [];
 
 	client.connect(5683, 'device.spark.io', function() {
 		console.log('conencted to cloud');
