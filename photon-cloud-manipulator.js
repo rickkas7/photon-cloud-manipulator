@@ -50,9 +50,14 @@ vorpal
 	});
 
 vorpal
-	.command('latency <ms>', 'Simulate a high-latency network like satellite.')
+	.command('latency [ms]', 'Simulate a high-latency network like satellite.')
 	.action(function(args, callback) {
-		modes.latency = parseInt(args.ms);
+		if (args.ms) {
+			modes.latency = parseInt(args.ms);
+		}
+		else {
+			modes.latency = 0;
+		}
 		this.log('latency ' + modes.latency + ' ms');
 		callback();			
 	});
@@ -80,11 +85,10 @@ server.on('connection', function(conn) {
 	console.log('connection from ' + conn.remoteAddress);
 	
 	var client = new net.Socket();
-
-	connections.push({conn:conn,client:client});
-
 	var uploadQueue = [];
 	var downloadQueue = [];
+
+	connections.push({conn:conn,client:client});
 
 	client.connect(5683, 'device.spark.io', function() {
 		console.log('conencted to cloud');
@@ -100,13 +104,15 @@ server.on('connection', function(conn) {
 				console.log('< ' + d.length + ' queued');
 				downloadQueue.push(d);
 				setTimeout(function() {
-					var d2 = downloadQueue.shift();
-					console.log('< ' + d2.length);
-					try {
-						conn.write(d2);
-					}
-					catch(e) {
-						// Ignore if the connection closed
+					if (downloadQueue.length > 0) {
+						var d2 = downloadQueue.shift();
+						console.log('< ' + d2.length);
+						try {
+							conn.write(d2);
+						}
+						catch(e) {
+							downloadQueue.length = 0;
+						}
 					}
 				}, modes.latency);
 			}
@@ -129,13 +135,15 @@ server.on('connection', function(conn) {
 				console.log('> ' + d.length + ' queued');
 				uploadQueue.push(d);
 				setTimeout(function() {
-					var d2 = uploadQueue.shift();
-					console.log('> ' + d2.length);
-					try {
-						client.write(d2);
-					}
-					catch(e) {
-						// Ignore if connection closed
+					if (uploadQueue.length > 0) {
+						var d2 = uploadQueue.shift();
+						console.log('> ' + d2.length);
+						try {
+							client.write(d2);
+						}
+						catch(e) {
+							uploadQueue.length = 0;
+						}	
 					}
 				}, modes.latency);
 			}
@@ -147,6 +155,8 @@ server.on('connection', function(conn) {
 	
 	conn.on('close', function() {
 		console.log('connection closed');
+		uploadQueue.length = 0;
+		downloadQueue.length = 0;
 		client.destroy();
 	});
 	
