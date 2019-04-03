@@ -17,7 +17,7 @@ The first thing you need to do is change your device to point at the server.
 - Run the command:
 
 ```
-particle keys server rsa.pub.der 192.168.2.4
+particle keys server rsa.pub.der --host 192.168.2.4 --port 5683
 ```
 
 The rsa.pub.der file is the public server key of the real Particle cloud server. It's included in the photon-cloud-manipulator directory so you don't need to download it separately.
